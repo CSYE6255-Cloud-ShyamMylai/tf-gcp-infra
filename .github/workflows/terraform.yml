@@ -14,5 +14,8 @@ jobs:
          - uses: actions/checkout@v4
          - uses: hashicorp/setup-terraform@v3
          
-         - name: Terraform init 
+         - name: Terraform downloading the binaries for the required provided 
            run: terraform init 
+           
+         - name: Status check to validate Terraform validate 
+           run: terraform validate
