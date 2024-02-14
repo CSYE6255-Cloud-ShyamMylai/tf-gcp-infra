@@ -54,9 +54,9 @@ variable "vpc_route_name" {
   description = "name of the route"
 }
 
-# variable "vpc_route_dest_address" {
-#   description = "destination address for the route"
-# }
+variable "vpc_route_dest_address" {
+  description = "destination address for the route"
+}
 
 variable "default_internet_gateway" {
   description = "default internet gateway"

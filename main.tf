@@ -38,9 +38,9 @@ resource "google_compute_subnetwork" "subnet-2" {
   stack_type         = var.stack_type_vpc_network
 }
 
-# resource "google_compute_route" "vpc_route" {
-#   name             = var.vpc_route_name
-#   network          = google_compute_network.vpc_network.id
-#   dest_range       = var.subnet_1_cidr_range
-#   next_hop_gateway = var.default_internet_gateway
-# }
+resource "google_compute_route" "vpc_route" {
+  name             = var.vpc_route_name
+  network          = google_compute_network.vpc_network.id
+  dest_range       = var.vpc_route_dest_address
+  next_hop_gateway = var.default_internet_gateway
+}
