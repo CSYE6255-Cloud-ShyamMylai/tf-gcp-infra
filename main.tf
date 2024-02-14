@@ -10,6 +10,7 @@ terraform {
 provider "google" {
   credentials = file(var.gcp_credentials_file)
   project     = var.projectid
+  region      = var.subnet_region
 
 }
 resource "google_compute_network" "vpc_network" {
