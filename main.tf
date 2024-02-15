@@ -10,37 +10,39 @@ terraform {
 provider "google" {
   credentials = file(var.gcp_credentials_file)
   project     = var.projectid
-  region      = var.subnet_region
-
+  region      = var.projectregion
 }
 resource "google_compute_network" "vpc_network" {
-  name                            = var.vpc_network_name
-  auto_create_subnetworks         = var.auto_create_subnetworks_flag
-  routing_mode                    = var.routing_mode_vpc_network
-  delete_default_routes_on_create = var.delete_default_routes_on_create_vpc_network
+  for_each                        = var.vpcs
+  name                            = each.value.name
+  auto_create_subnetworks         = each.value.auto_create_subnetworks_flag
+  routing_mode                    = each.value.routing_mode_vpc_network
+  delete_default_routes_on_create = each.value.delete_default_routes_on_create_vpc_network
+  project                         = var.projectid
 }
 
 resource "google_compute_subnetwork" "subnet-1" {
-  name               = var.subnet_1
-  ip_cidr_range      = var.subnet_1_cidr_range
-  network            = google_compute_network.vpc_network.id
-  region             = var.subnet_region
-  secondary_ip_range = var.secondary_ip_range_subnets
-  stack_type         = var.stack_type_vpc_network
+  for_each      = var.vpcs
+  name          = each.value.subnet_1
+  ip_cidr_range = each.value.subnet_1_cidr_range
+  network       = google_compute_network.vpc_network[each.key].id
+  region        = each.value.subnet_region
+  stack_type    = each.value.stack_type_vpc_network
 }
 
 resource "google_compute_subnetwork" "subnet-2" {
-  name               = var.subnet_2
-  ip_cidr_range      = var.subnet_2_cidr_range
-  network            = google_compute_network.vpc_network.id
-  region             = var.subnet_region
-  secondary_ip_range = var.secondary_ip_range_subnets
-  stack_type         = var.stack_type_vpc_network
+  for_each      = var.vpcs
+  name          = each.value.subnet_2
+  ip_cidr_range = each.value.subnet_2_cidr_range
+  network       = google_compute_network.vpc_network[each.key].id
+  region        = each.value.subnet_region
+  stack_type    = each.value.stack_type_vpc_network
 }
 
 resource "google_compute_route" "vpc_route" {
-  name             = var.vpc_route_name
-  network          = google_compute_network.vpc_network.id
-  dest_range       = var.vpc_route_dest_address
-  next_hop_gateway = var.default_internet_gateway
+  for_each         = var.vpcs
+  name             = each.value.vpc_route_name
+  network          = google_compute_network.vpc_network[each.key].id
+  dest_range       = each.value.vpc_route_dest_address
+  next_hop_gateway = each.value.default_internet_gateway
 }
