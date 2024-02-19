@@ -12,7 +12,7 @@ provider "google" {
   project     = var.projectid
   region      = var.projectregion
 }
-resource "google_compute_network" "vpc_network" 
+resource "google_compute_network" "vpc_network" {
   for_each                        = var.vpcs
   name                            = each.value.name
   auto_create_subnetworks         = each.value.auto_create_subnetworks_flag
