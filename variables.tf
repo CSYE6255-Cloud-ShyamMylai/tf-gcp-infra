@@ -6,7 +6,8 @@ variable "projectid" {
   description = "projectId for the project"
 }
 variable "vpcs" {
-  description = "List  of VPC Maps"
+  description = "vpc network details"
+  # type = map(any)
   type = map(object({
     name                                        = string
     subnet_1                                    = string
@@ -26,4 +27,29 @@ variable "vpcs" {
 
 variable "projectregion" {
   description = "region for the project"
+}
+
+variable "custom_vm_map" {
+  description = "custom instance map"
+  type        = any
+}
+
+variable "firewall_ssh" {
+  description = "firewall ssh"
+  type        = any
+}
+
+variable "firewall_web" {
+  description = "firewall web"
+  type        = any
+}
+
+variable "most_recent_image" {
+  description = "most recent image"
+  type        = string
+  default     = "csye6255packer-dev-assignment04"
+}
+variable "image_family" {
+  default     = "csye6255packer-dev"
+  description = "The family of images to filter"
 }
