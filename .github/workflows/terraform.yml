@@ -16,6 +16,9 @@ jobs:
          
          - name: Terraform downloading the binaries for the required provided 
            run: terraform init 
+
+         - name: Terraform format checker 
+           run: terraform fmt -check
            
          - name: Status check to validate Terraform validate 
            run: terraform validate
