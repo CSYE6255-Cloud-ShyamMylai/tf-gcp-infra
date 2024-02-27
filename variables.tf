@@ -53,3 +53,33 @@ variable "image_family" {
   default     = "csye6255packer-dev"
   description = "The family of images to filter"
 }
+
+variable "subnet_endpoint" {
+  description = "subnet endpoint"
+  type        = any
+}
+
+variable "database_name" {
+  description = "database name"
+  type        = string
+}
+
+variable "database_username" {
+  description = "database user name"
+  type        = string
+}
+
+variable "random_id_prefix" {
+  description = "random id prefix"
+  type        = string
+}
+
+variable "cloud_sql_instance" {
+  description = "cloud sql instance"
+  type        = any
+}
+
+variable "forwarding_rule" {
+  description = "forwarding rule"
+  type        = any
+} 

@@ -103,7 +103,7 @@ resource "google_compute_firewall" "vpc_firewall_ssh" {
 
 resource "google_sql_database_instance" "cloud_sql_instance" {
   provider            = google-beta
-  database_version    = "MYSQL_8_0"
+  database_version    = var.cloud_sql_instance.database_version
   name                = random_id.cloud_sql_instance_generate_id.hex
   # depends_on =[google_service_networking_connection.private_ip_connection]
   deletion_protection = false
@@ -111,23 +111,23 @@ resource "google_sql_database_instance" "cloud_sql_instance" {
   region  = var.projectregion
 
   settings {
-    tier              = "db-f1-micro"
-    edition           = "ENTERPRISE"
-    availability_type = "REGIONAL"
-    disk_type         = "PD_SSD"
-    disk_size         = 100
+    tier              = var.cloud_sql_instance.tier
+    edition           = var.cloud_sql_instance.edition
+    availability_type = var.cloud_sql_instance.availability_type
+    disk_type         = var.cloud_sql_instance.disk_type
+    disk_size         = var.cloud_sql_instance.disk_size
     ip_configuration {
-      ipv4_enabled = false
+      ipv4_enabled = var.cloud_sql_instance.ipv4_enabled
       # private_network = google_compute_network.vpc_network.self_link
       psc_config {
-        psc_enabled               = true
+        psc_enabled               = var.cloud_sql_instance.psc_enabled
         allowed_consumer_projects = [var.projectid]
       }
     }
 
     backup_configuration {
-      enabled            = true
-      binary_log_enabled = true
+      enabled            = var.cloud_sql_instance.backup_enabled
+      binary_log_enabled = var.cloud_sql_instance.binary_log_enabled
     }
   }
 }
@@ -135,10 +135,10 @@ resource "google_sql_database_instance" "cloud_sql_instance" {
 
 ### PRIVATE SERVICE CONNECT
 resource "google_compute_address" "sql_instance_subnet_private_ip" {
-  name         = "psc-compute-address-${google_sql_database_instance.cloud_sql_instance.name}"
+  name         = "${var.subnet_endpoint.prefix}-${google_sql_database_instance.cloud_sql_instance.name}"
   depends_on   = [google_compute_subnetwork.subnet-2]
-  region       = "us-central1"
-  address_type = "INTERNAL"
+  region       = var.vpcs["vpc1"].subnet_region
+  address_type = var.subnet_endpoint.address_type
   subnetwork   = var.vpcs["vpc1"].subnet_2 # Replace value with the name of the subnet here.
   # address      = "193.1.254.110"   # Replace value with the IP address to reserve.
 }
@@ -148,18 +148,18 @@ data "google_sql_database_instance" "sql_instance" {
 }
 
 resource "google_compute_forwarding_rule" "subnet_forwarding_rule" {
-  name                  = "psc-forwarding-rule-${google_sql_database_instance.cloud_sql_instance.name}"
+  name                  = "${var.forwarding_rule.prefix}-${google_sql_database_instance.cloud_sql_instance.name}"
   depends_on            = [google_compute_address.sql_instance_subnet_private_ip]
-  region                = "us-central1"
+  region                = var.vpcs["vpc1"].subnet_region
   network               = google_compute_network.vpc_network.name
   ip_address            = google_compute_address.sql_instance_subnet_private_ip.self_link
-  load_balancing_scheme = ""
+  load_balancing_scheme = var.forwarding_rule.load_balancing_scheme
   target                = data.google_sql_database_instance.sql_instance.psc_service_attachment_link
 }
 
 resource "random_id" "cloud_sql_instance_generate_id" {
   byte_length = 4
-  prefix      = "cloud-sql-instance"
+  prefix      = var.random_id_prefix
 }
 
 resource "random_password" "random_generated_password" {
@@ -171,13 +171,13 @@ locals {
 }
 
 resource "google_sql_database" "cloud_sql_DB" {
-  name     = "webapp"
+  name     = var.database_name
   instance = google_sql_database_instance.cloud_sql_instance.name
 }
 
 resource "google_sql_user" "cloud_sql_user" {
   depends_on = [random_password.random_generated_password, google_sql_database_instance.cloud_sql_instance]
-  name       = "webapp"
+  name       = var.database_username
   instance   = google_sql_database_instance.cloud_sql_instance.name
   password   = local.generated_password
 }
