@@ -102,13 +102,13 @@ resource "google_compute_firewall" "vpc_firewall_ssh" {
 # }
 
 resource "google_sql_database_instance" "cloud_sql_instance" {
-  provider            = google-beta
-  database_version    = var.cloud_sql_instance.database_version
-  name                = random_id.cloud_sql_instance_generate_id.hex
+  provider         = google-beta
+  database_version = var.cloud_sql_instance.database_version
+  name             = random_id.cloud_sql_instance_generate_id.hex
   # depends_on =[google_service_networking_connection.private_ip_connection]
   deletion_protection = false
-  project = var.projectid
-  region  = var.projectregion
+  project             = var.projectid
+  region              = var.projectregion
 
   settings {
     tier              = var.cloud_sql_instance.tier
@@ -192,7 +192,7 @@ data "google_compute_image" "custom_image" {
 
 
 resource "google_compute_instance" "vm_instance_using_mi" {
-  depends_on = [google_sql_user.cloud_sql_user,google_compute_address.sql_instance_subnet_private_ip]
+  depends_on = [google_sql_user.cloud_sql_user, google_compute_address.sql_instance_subnet_private_ip]
   network_interface {
     network    = google_compute_network.vpc_network.id
     subnetwork = google_compute_subnetwork.subnet-1.id
@@ -226,4 +226,4 @@ resource "google_compute_instance" "vm_instance_using_mi" {
   fi
   EOT
 }
-      # echo "DB_HOST=${google_sql_database_instance.cloud_sql_instance.ip_address[0].ip_address}" >> /opt/webapp/.env
+# echo "DB_HOST=${google_sql_database_instance.cloud_sql_instance.ip_address[0].ip_address}" >> /opt/webapp/.env
