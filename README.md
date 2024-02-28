@@ -16,3 +16,5 @@ Repo relate Infrastructure as code with terraform
 
 #### API'S Enabled 
 - Compute Engine API
+- Service Networking API
+- Cloud SQL Admin API
