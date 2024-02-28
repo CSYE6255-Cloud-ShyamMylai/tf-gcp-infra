@@ -78,7 +78,7 @@ resource "google_compute_firewall" "vpc_firewall_ssh" {
   description = var.firewall_ssh["description"]
   direction   = var.firewall_ssh["direction"]
   priority    = var.firewall_ssh["priority"]
-  allow {
+  deny {
     protocol = var.firewall_ssh["deny"]["protocol"]
     ports    = var.firewall_ssh["deny"]["ports"]
   }
