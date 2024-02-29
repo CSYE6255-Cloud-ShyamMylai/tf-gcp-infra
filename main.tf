@@ -139,8 +139,7 @@ resource "google_compute_address" "sql_instance_subnet_private_ip" {
   depends_on   = [google_compute_subnetwork.subnet-2]
   region       = var.vpcs["vpc1"].subnet_region
   address_type = var.subnet_endpoint.address_type
-  subnetwork   = var.vpcs["vpc1"].subnet_2 # Replace value with the name of the subnet here.
-  # address      = "193.1.254.110"   # Replace value with the IP address to reserve.
+  subnetwork   = var.vpcs["vpc1"].subnet_2 
 }
 
 data "google_sql_database_instance" "sql_instance" {
