@@ -85,6 +85,32 @@ resource "google_compute_firewall" "vpc_firewall_ssh" {
   source_ranges = var.firewall_ssh["source_ranges"]
 }
 
+resource "google_compute_firewall" "firewall_for_blocking_vm" {
+  network   = google_compute_network.vpc_network.id
+  name      = var.blockeverything_for_db.name
+  direction = var.blockeverything_for_db.direction
+  deny {
+    protocol = var.blockeverything_for_db.deny.protocol
+    ports    = var.blockeverything_for_db.deny.ports
+  }
+  destination_ranges = [var.vpcs["vpc1"].subnet_2_cidr_range]
+  priority           = var.blockeverything_for_db.priority
+}
+resource "google_compute_firewall" "firewall_for_unblocking_vm_with_tags_for_sql_request" {
+  network   = google_compute_network.vpc_network.id
+  name      = var.allow_just_tags_for_db.name
+  direction = var.allow_just_tags_for_db.direction
+  allow {
+    protocol = var.allow_just_tags_for_db.allow.protocol
+    ports    = var.allow_just_tags_for_db.allow.ports
+  }
+  priority = var.allow_just_tags_for_db.priority
+
+  destination_ranges = [var.vpcs["vpc1"].subnet_2_cidr_range]
+  target_tags        = var.allow_just_tags_for_db.target_tags
+  # targettarget_tags =  = var.custom_vm_map["tags"]
+}
+
 ### PRIVATE SERVICE ACCESS 
 # resource "google_compute_global_address" "private_alloc_vpc" {
 #   name          = "allocation-range-vpc-peering"
@@ -219,7 +245,7 @@ resource "google_compute_instance" "vm_instance_using_mi" {
   else
       echo "DB_HOST=${google_compute_address.sql_instance_subnet_private_ip.address}" >> /opt/webapp/.env
       echo "DB_USERNAME=${google_sql_user.cloud_sql_user.name}">>/opt/webapp/.env
-      echo "DB_PASSWORD=${google_sql_user.cloud_sql_user.password}">>/opt/webapp/.env
+      echo "DB_PASSWORD=${local.generated_password}">>/opt/webapp/.env
       echo "DB_DATABASE=${google_sql_database.cloud_sql_DB.name}">>/opt/webapp/.env
       echo "PORT=3500">>/opt/webapp/.env
   fi

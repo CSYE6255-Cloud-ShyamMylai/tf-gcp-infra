@@ -83,3 +83,15 @@ variable "forwarding_rule" {
   description = "forwarding rule"
   type        = any
 }
+
+variable "blockeverything_for_db" {
+  description = "block everything for db"
+  type        = any
+
+}
+
+variable "allow_just_tags_for_db" {
+  description = "allow just tags for db"
+  type        = any
+
+}
