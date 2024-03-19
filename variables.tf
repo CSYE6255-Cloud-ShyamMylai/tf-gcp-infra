@@ -95,3 +95,19 @@ variable "allow_just_tags_for_db" {
   type        = any
 
 }
+
+variable "dns_managed_zone" {
+  description = "dns managed zone"
+  type        = string
+}
+
+
+variable "vm_service_account" {
+  description = "vm service account details"
+  type        = any
+}
+
+variable "dns_record_set" {
+  description = "dns record set"
+  type        = any
+}

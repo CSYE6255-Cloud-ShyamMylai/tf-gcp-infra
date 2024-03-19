@@ -195,6 +195,9 @@ locals {
   generated_password = random_password.random_generated_password.result
 }
 
+resource "terraform_data" "trigger_vm_creation_on_password_change" {
+  input = local.generated_password
+}
 resource "google_sql_database" "cloud_sql_DB" {
   name     = var.database_name
   instance = google_sql_database_instance.cloud_sql_instance.name
@@ -215,9 +218,22 @@ data "google_compute_image" "custom_image" {
   family  = var.image_family
 }
 
+data "google_dns_managed_zone" "managed_zone" {
+  name = var.dns_managed_zone
+}
+
+### serrvice account 
+resource "google_service_account" "vm_service_account" {
+  account_id   = var.vm_service_account.account_id
+  display_name = var.vm_service_account.display_name
+  project      = var.projectid
+}
 
 resource "google_compute_instance" "vm_instance_using_mi" {
-  depends_on = [google_sql_user.cloud_sql_user, google_compute_address.sql_instance_subnet_private_ip]
+  depends_on = [google_sql_database_instance.cloud_sql_instance, google_compute_address.sql_instance_subnet_private_ip, google_service_account.vm_service_account]
+  lifecycle {
+    replace_triggered_by = [google_sql_database_instance.cloud_sql_instance]
+  }
   network_interface {
     network    = google_compute_network.vpc_network.id
     subnetwork = google_compute_subnetwork.subnet-1.id
@@ -237,6 +253,12 @@ resource "google_compute_instance" "vm_instance_using_mi" {
       type  = var.custom_vm_map["boost_disk_initilaize_params_type"]
     }
   }
+  allow_stopping_for_update = true # allow the instance to be stopped for update
+  service_account {
+    email  = google_service_account.vm_service_account.email
+    scopes = var.vm_service_account.scopes
+  }
+
   name                    = var.custom_vm_map["vm_name"]
   metadata_startup_script = <<EOT
   #!/bin/bash
@@ -251,4 +273,28 @@ resource "google_compute_instance" "vm_instance_using_mi" {
   fi
   EOT
 }
-# echo "DB_HOST=${google_sql_database_instance.cloud_sql_instance.ip_address[0].ip_address}" >> /opt/webapp/.env
+
+resource "google_dns_record_set" "a_record_webapp_vm" {
+  name         = data.google_dns_managed_zone.managed_zone.dns_name
+  depends_on   = [google_compute_instance.vm_instance_using_mi]
+  managed_zone = data.google_dns_managed_zone.managed_zone.name
+  type         = var.dns_record_set.type
+  ttl          = var.dns_record_set.ttl
+  rrdatas      = [google_compute_instance.vm_instance_using_mi.network_interface[0].access_config[0].nat_ip]
+}
+
+resource "google_project_iam_binding" "binding_loggin_adming_to_serviceaccount" {
+  project = var.projectid
+  role    = var.vm_service_account.logging_role
+  members = [
+    "serviceAccount:${google_service_account.vm_service_account.email}",
+  ]
+}
+
+resource "google_project_iam_binding" "binding_montironing_metric_writer_to_serviceaccount" {
+  project = var.projectid
+  role    = var.vm_service_account.monitoring_role
+  members = [
+    "serviceAccount:${google_service_account.vm_service_account.email}",
+  ]
+}
