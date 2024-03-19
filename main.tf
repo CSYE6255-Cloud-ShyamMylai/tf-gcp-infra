@@ -188,7 +188,7 @@ resource "random_id" "cloud_sql_instance_generate_id" {
 }
 
 resource "random_password" "random_generated_password" {
-  length = 16
+  length = 5
 }
 
 locals {
