@@ -15,6 +15,14 @@ Repo relate Infrastructure as code with terraform
 
 
 #### API'S Enabled 
-- Compute Engine API
+- Compute Engine API	
+- Cloud Monitoring API		
+- Cloud SQL Admin API		
+- Cloud Logging API		
+- Cloud DNS API		
+- Cloud Resource Manager API	
+- Identity and Access Management (IAM) API		
+- Cloud OS Login API					
+- IAM Service Account Credentials API					
+- Network Management API					
 - Service Networking API
-- Cloud SQL Admin API

@@ -287,7 +287,7 @@ resource "google_project_iam_binding" "binding_loggin_adming_to_serviceaccount" 
   project = var.projectid
   role    = var.vm_service_account.logging_role
   members = [
-    "serviceAccount:${google_service_account.vm_service_account.email}",
+    "${var.service_account_constant}:${google_service_account.vm_service_account.email}",
   ]
 }
 
@@ -295,6 +295,6 @@ resource "google_project_iam_binding" "binding_montironing_metric_writer_to_serv
   project = var.projectid
   role    = var.vm_service_account.monitoring_role
   members = [
-    "serviceAccount:${google_service_account.vm_service_account.email}",
+    "${var.service_account_constant}:${google_service_account.vm_service_account.email}",
   ]
 }

@@ -111,3 +111,9 @@ variable "dns_record_set" {
   description = "dns record set"
   type        = any
 }
+
+variable "service_account_constant" {
+  description = "service account constant"
+  type        = any
+  default     = "serviceAccount"
+}
