@@ -4,13 +4,14 @@ Repo relate Infrastructure as code with terraform
 1. Copy the `terraform.tfvars.example` to `terraform.tfvars` and fill in the required values.
 2. Copy credentials.json to the downloaded path
 3. brew install terraform `brew install terraform`
-4. Copy project id and service account key file to the root directory or download it from the GCP console.
-5. Run `terrform fmt` to format the code.
-6. Run `terraform init` to initialize the project.
-7. Run `terraform validate` to validate the code.
-8. Run `terraform plan` to see the changes that will be made.
-9. Run `terraform apply` to apply the changes.
-10. Run `terraform destroy` to destroy the infrastructure.
+4. download the serverless and delete object in bucket in gcp console and reupload it.
+5. Copy project id and service account key file to the root directory or download it from the GCP console.
+6. Run `terrform fmt` to format the code.
+7. Run `terraform init` to initialize the project.
+8. Run `terraform validate` to validate the code.
+9. Run `terraform plan` to see the changes that will be made.
+10. Run `terraform apply` to apply the changes.
+11. Run `terraform destroy` to destroy the infrastructure.
 
 
 
@@ -26,3 +27,10 @@ Repo relate Infrastructure as code with terraform
 - IAM Service Account Credentials API					
 - Network Management API					
 - Service Networking API
+- Cloud Build API
+- Cloud Functions API
+- Cloud Logging API
+- Cloud Pub/Sub API
+- Eventarc API
+- Cloud Pub/Sub API
+- Cloud Run Admin API

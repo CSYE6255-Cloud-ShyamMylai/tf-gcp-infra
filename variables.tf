@@ -117,3 +117,32 @@ variable "service_account_constant" {
   type        = any
   default     = "serviceAccount"
 }
+
+variable "pub_sub_topic" {
+  description = "pub sub topic"
+  type        = any
+}
+
+
+variable "bucket_object_details" {
+  description = "bucket object details"
+  type        = any
+  
+}
+
+variable "service_account_for_cloud_function" {
+  description = "service account for cloud function"
+  type        = any
+}
+
+variable "cloud_function_for_verify_email"{
+  description = "cloud function verify email"
+  type        = any
+}
+
+
+variable "google_vpc_access_connector" {
+  description = "google vpc access connector"
+  type        = any
+  
+}
