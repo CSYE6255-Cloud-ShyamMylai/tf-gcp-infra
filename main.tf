@@ -2,12 +2,17 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google",
-      version = ">=4.51.0"
+      version = ">=5.21.0"
     }
 
     google-beta = {
       source  = "hashicorp/google-beta",
       version = ">=4.51.0"
+    }
+
+    archive = {
+      source  = "hashicorp/archive",
+      version = ">=2.4.2"
     }
   }
 }
@@ -78,38 +83,13 @@ resource "google_compute_firewall" "vpc_firewall_ssh" {
   description = var.firewall_ssh["description"]
   direction   = var.firewall_ssh["direction"]
   priority    = var.firewall_ssh["priority"]
-  deny {
+  allow {
     protocol = var.firewall_ssh["deny"]["protocol"]
     ports    = var.firewall_ssh["deny"]["ports"]
   }
   source_ranges = var.firewall_ssh["source_ranges"]
 }
 
-resource "google_compute_firewall" "firewall_for_blocking_vm" {
-  network   = google_compute_network.vpc_network.id
-  name      = var.blockeverything_for_db.name
-  direction = var.blockeverything_for_db.direction
-  deny {
-    protocol = var.blockeverything_for_db.deny.protocol
-    ports    = var.blockeverything_for_db.deny.ports
-  }
-  destination_ranges = [var.vpcs["vpc1"].subnet_2_cidr_range]
-  priority           = var.blockeverything_for_db.priority
-}
-resource "google_compute_firewall" "firewall_for_unblocking_vm_with_tags_for_sql_request" {
-  network   = google_compute_network.vpc_network.id
-  name      = var.allow_just_tags_for_db.name
-  direction = var.allow_just_tags_for_db.direction
-  allow {
-    protocol = var.allow_just_tags_for_db.allow.protocol
-    ports    = var.allow_just_tags_for_db.allow.ports
-  }
-  priority = var.allow_just_tags_for_db.priority
-
-  destination_ranges = [var.vpcs["vpc1"].subnet_2_cidr_range]
-  target_tags        = var.allow_just_tags_for_db.target_tags
-  # targettarget_tags =  = var.custom_vm_map["tags"]
-}
 
 ### PRIVATE SERVICE ACCESS 
 # resource "google_compute_global_address" "private_alloc_vpc" {
@@ -145,6 +125,7 @@ resource "google_sql_database_instance" "cloud_sql_instance" {
     ip_configuration {
       ipv4_enabled = var.cloud_sql_instance.ipv4_enabled
       # private_network = google_compute_network.vpc_network.self_link
+      # enable_private_path_for_google_cloud_services = true 
       psc_config {
         psc_enabled               = var.cloud_sql_instance.psc_enabled
         allowed_consumer_projects = [var.projectid]
@@ -297,4 +278,105 @@ resource "google_project_iam_binding" "binding_montironing_metric_writer_to_serv
   members = [
     "${var.service_account_constant}:${google_service_account.vm_service_account.email}",
   ]
+}
+
+resource "google_project_iam_binding" "binding_service_control_to_serviceaccount" {
+  project = var.projectid
+  role    = var.vm_service_account.pubsub_publisher_role
+  members = ["${var.service_account_constant}:${google_service_account.vm_service_account.email}"]
+}
+
+
+resource "google_pubsub_topic" "verify_email" {
+  name                       = var.pub_sub_topic.name
+  message_retention_duration = var.pub_sub_topic.message_retention_duration
+  project                    = var.projectid
+}
+
+
+resource "random_id" "bucket_prefix" {
+  byte_length = 8
+}
+
+### storage bucket 
+
+data "google_storage_bucket" "storage_bucket_of_cloud_function" {
+  name = var.bucket_object_details.bucket_name
+}
+
+data "google_storage_bucket_object" "storage_bucket_object_of_cloud_function" {
+  bucket = data.google_storage_bucket.storage_bucket_of_cloud_function.name
+  name   = var.bucket_object_details.object_file_name
+}
+
+resource "google_service_account" "service_account_for_cloud_function" {
+  account_id   =  var.service_account_for_cloud_function.account_id
+  display_name = var.service_account_for_cloud_function.display_name
+  project      = var.projectid
+}
+
+resource "google_cloudfunctions2_function" "cloud_function_for_verify_email" {
+  name        = var.cloud_function_for_verify_email.name
+  description = var.cloud_function_for_verify_email.description
+  location    = var.projectregion
+  build_config {
+    runtime     = var.cloud_function_for_verify_email.build_config.runtime
+    entry_point = var.cloud_function_for_verify_email.build_config.entry_point
+    source {
+      storage_source {
+        bucket = data.google_storage_bucket.storage_bucket_of_cloud_function.name
+        object = data.google_storage_bucket_object.storage_bucket_object_of_cloud_function.name
+      }
+    }
+  }
+
+  event_trigger {
+    trigger_region        = var.cloud_function_for_verify_email.event_trigger.trigger_region
+    event_type            = var.cloud_function_for_verify_email.event_trigger.event_type
+    pubsub_topic          = google_pubsub_topic.verify_email.id
+    retry_policy          = var.cloud_function_for_verify_email.event_trigger.retry_policy
+    service_account_email = google_service_account.service_account_for_cloud_function.email
+  }
+
+  service_config {
+    service                          = var.cloud_function_for_verify_email.service_config.service
+    available_memory                 = var.cloud_function_for_verify_email.service_config.available_memory
+    max_instance_request_concurrency = var.cloud_function_for_verify_email.service_config.max_instance_request_concurrency
+    environment_variables = {
+      MAILGUN_API_KEY = var.cloud_function_for_verify_email.service_config.environment_variables.MAILGUN_API_KEY,
+      MAILGUN_DOMAIN  = var.cloud_function_for_verify_email.service_config.environment_variables.MAILGUN_DOMAIN,
+      DB_HOST         = google_compute_address.sql_instance_subnet_private_ip.address
+      DB_USERNAME     = google_sql_user.cloud_sql_user.name
+      DB_PASSWORD     = local.generated_password
+      DB_DATABASE     = google_sql_database.cloud_sql_DB.name
+    }
+    max_instance_count            = var.cloud_function_for_verify_email.service_config.max_instance_count
+    service_account_email         = google_service_account.service_account_for_cloud_function.email
+    available_cpu                 = var.cloud_function_for_verify_email.service_config.available_cpu
+    ingress_settings              = var.cloud_function_for_verify_email.service_config.ingress_settings
+    vpc_connector                 = google_vpc_access_connector.serverless_function_connector.name
+    vpc_connector_egress_settings = var.cloud_function_for_verify_email.service_config.vpc_connector_egress_settings
+  }
+}
+
+### IAM BINDING FOR CLOUD RUN SERVICE ACCOUNT 
+resource "google_project_iam_binding" "binding_cloud_function_to_service_account_service_run_invoker" {
+  project = var.projectid
+  role    = var.service_account_for_cloud_function.invoker_role
+  members = [
+    "${var.service_account_constant}:${google_service_account.service_account_for_cloud_function.email}",
+  ]
+}
+resource "google_project_iam_binding" "binding_cloud_function_to_service_account_service_sql_client" {
+  project = var.projectid
+  role    = var.service_account_for_cloud_function.cloudsql_role
+  members = ["${var.service_account_constant}:${google_service_account.service_account_for_cloud_function.email}"]
+}
+
+resource "google_vpc_access_connector" "serverless_function_connector" {
+  name          = var.google_vpc_access_connector.name
+  region        = var.projectregion
+  project       = var.projectid
+  network       = google_compute_network.vpc_network.name
+  ip_cidr_range = var.google_vpc_access_connector.ip_cidr_range
 }

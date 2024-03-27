@@ -35,6 +35,7 @@ terraform.rc
 
 #ignore credentials.json 
 credentials.json
+terraform-credentials.json
 
 # ignore terraform form lock 
 .terraform.lock.hcl
