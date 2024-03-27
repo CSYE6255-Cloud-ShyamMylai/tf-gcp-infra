@@ -310,7 +310,7 @@ data "google_storage_bucket_object" "storage_bucket_object_of_cloud_function" {
 }
 
 resource "google_service_account" "service_account_for_cloud_function" {
-  account_id   =  var.service_account_for_cloud_function.account_id
+  account_id   = var.service_account_for_cloud_function.account_id
   display_name = var.service_account_for_cloud_function.display_name
   project      = var.projectid
 }
