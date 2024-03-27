@@ -127,7 +127,7 @@ variable "pub_sub_topic" {
 variable "bucket_object_details" {
   description = "bucket object details"
   type        = any
-  
+
 }
 
 variable "service_account_for_cloud_function" {
@@ -135,7 +135,7 @@ variable "service_account_for_cloud_function" {
   type        = any
 }
 
-variable "cloud_function_for_verify_email"{
+variable "cloud_function_for_verify_email" {
   description = "cloud function verify email"
   type        = any
 }
@@ -144,5 +144,5 @@ variable "cloud_function_for_verify_email"{
 variable "google_vpc_access_connector" {
   description = "google vpc access connector"
   type        = any
-  
+
 }
