@@ -490,56 +490,56 @@ module "gce-lb-http" {
   version = ">= 9.0"
 
   project           = var.projectid
-  name              = "csye6225-loadbalancer-2024"
+  name              = var.module_load_balancer.name
   network           = google_compute_network.vpc_network.name
   depends_on        = [google_compute_region_instance_group_manager.group_manager, google_compute_region_autoscaler.auto_scaling_policy, google_compute_network.vpc_network]
   firewall_networks = [google_compute_network.vpc_network.name]
 
   backends = {
     default = {
-      port                            = 3500
-      protocol                        = "HTTP"
-      port_name                       = "http"
-      timeout_sec                     = 30
-      enable_cdn                      = false
-      connection_draining_timeout_sec = 300
-      session_affinity                = "CLIENT_IP"
+      port                            = var.module_load_balancer.backends.default.port
+      protocol                        = var.module_load_balancer.backends.default.protocol
+      port_name                       = var.module_load_balancer.backends.default.port_name
+      timeout_sec                     = var.module_load_balancer.backends.default.timeout_sec
+      enable_cdn                      = var.module_load_balancer.backends.default.enable_cdn
+      connection_draining_timeout_sec = var.module_load_balancer.backends.default.connection_draining_timeout_sec
+      session_affinity                = var.module_load_balancer.backends.default.session_affinity
 
       health_check = {
-        request_path        = "/healthz"
-        port                = 3500
-        check_interval_sec  = 25
-        timeout_sec         = 20
-        unhealthy_threshold = 3
-        healthy_threshold   = 3
-        logging             = true
+        request_path        = var.module_load_balancer.backends.default.health_check.request_path
+        port                = var.module_load_balancer.backends.default.health_check.port
+        check_interval_sec  = var.module_load_balancer.backends.default.health_check.check_interval_sec
+        timeout_sec         = var.module_load_balancer.backends.default.health_check.timeout_sec
+        unhealthy_threshold = var.module_load_balancer.backends.default.health_check.unhealthy_threshold
+        healthy_threshold   = var.module_load_balancer.backends.default.health_check.healthy_threshold
+        logging             = var.module_load_balancer.backends.default.health_check.logging
       }
 
       log_config = {
-        enable      = true
-        sample_rate = 1.0
+        enable      = var.module_load_balancer.backends.default.log_config.enable
+        sample_rate = var.module_load_balancer.backends.default.log_config.sample_rate
       }
 
       groups = [
         {
           # Each node pool instance group should be added to the backend.
           group                 = google_compute_region_instance_group_manager.group_manager.instance_group
-          balancing_mode        = "UTILIZATION"
-          max_rate_per_instance = 5
-          max_utilization       = 0.8
-          capacity_scaler       = 1
+          balancing_mode        = var.module_load_balancer.backends.default.groups[0].balancing_mode
+          max_rate_per_instance = var.module_load_balancer.backends.default.groups[0].max_rate_per_instance
+          max_utilization       = var.module_load_balancer.backends.default.groups[0].max_utilization
+          capacity_scaler       = var.module_load_balancer.backends.default.groups[0].capacity_scaler
         }
       ]
       iap_config = {
-        enable = false
+        enable = var.module_load_balancer.backends.default.iap_config.enable
       }
     }
   }
-  http_forward                    = false
-  https_redirect                  = false
-  managed_ssl_certificate_domains = ["shyammylai.me"]
-  ssl                             = true
-  target_tags                     = ["csye6225"]
+  http_forward                    = var.module_load_balancer.http_forward
+  https_redirect                  = var.module_load_balancer.https_redirect
+  managed_ssl_certificate_domains = var.module_load_balancer.managed_ssl_certificate_domains
+  ssl                             = var.module_load_balancer.ssl
+  target_tags                     = var.module_load_balancer.target_tags
 }
 
 

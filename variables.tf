@@ -178,3 +178,9 @@ variable "random_password_generator" {
   description = "random password generator"
   type        = any
 }
+
+variable "module_load_balancer" {
+  description = "module for load balancer initialization"
+  type        = any
+
+}
