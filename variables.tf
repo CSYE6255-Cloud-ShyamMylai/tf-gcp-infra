@@ -146,3 +146,35 @@ variable "google_vpc_access_connector" {
   type        = any
 
 }
+
+variable "google_compute_region_instance_template" {
+  description = "google compute instance regional template"
+  type        = any
+}
+
+variable "google_compute_region_health_check" {
+  description = "google compute region health check"
+  type        = any
+}
+
+
+variable "google_compute_health_check_firewall" {
+  description = "google compute health check firewall"
+  type        = any
+}
+
+
+variable "google_compute_region_instance_group_manager" {
+  description = "google compute region instance group manager"
+  type        = any
+}
+
+variable "google_compute_region_autoscaler" {
+  description = "google compute region autoscaler"
+  type        = any
+}
+
+variable "random_password_generator" {
+  description = "random password generator"
+  type        = any
+}

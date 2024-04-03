@@ -39,3 +39,6 @@ terraform-credentials.json
 
 # ignore terraform form lock 
 .terraform.lock.hcl
+
+#DS_STORE
+.DS_STORE
