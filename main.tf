@@ -198,50 +198,50 @@ resource "google_service_account" "vm_service_account" {
   project      = var.projectid
 }
 
-resource "google_compute_instance" "vm_instance_using_mi" {
-  depends_on = [google_sql_database_instance.cloud_sql_instance, google_service_account.vm_service_account]
-  lifecycle {
-    replace_triggered_by = [google_sql_database_instance.cloud_sql_instance]
-  }
-  network_interface {
-    network    = google_compute_network.vpc_network.id
-    subnetwork = google_compute_subnetwork.subnet-1.id
-    access_config {
-      network_tier = var.custom_vm_map["network_tier"]
-    }
-  }
-  tags = var.custom_vm_map["tags"]
+# resource "google_compute_instance" "vm_instance_using_mi" {
+#   depends_on = [google_sql_database_instance.cloud_sql_instance, google_service_account.vm_service_account]
+#   lifecycle {
+#     replace_triggered_by = [google_sql_database_instance.cloud_sql_instance]
+#   }
+#   network_interface {
+#     network    = google_compute_network.vpc_network.id
+#     subnetwork = google_compute_subnetwork.subnet-1.id
+#     access_config {
+#       network_tier = var.custom_vm_map["network_tier"]
+#     }
+#   }
+#   tags = var.custom_vm_map["tags"]
 
-  machine_type = var.custom_vm_map["machine_type"]
-  zone         = var.custom_vm_map["zone"]
-  boot_disk {
-    device_name = var.custom_vm_map["boost_disk_initilaize_params_size"]
-    initialize_params {
-      image = data.google_compute_image.custom_image.self_link
-      size  = var.custom_vm_map["boost_disk_initilaize_params_size"]
-      type  = var.custom_vm_map["boost_disk_initilaize_params_type"]
-    }
-  }
-  allow_stopping_for_update = true # allow the instance to be stopped for update
-  service_account {
-    email  = google_service_account.vm_service_account.email
-    scopes = var.vm_service_account.scopes
-  }
+#   machine_type = var.custom_vm_map["machine_type"]
+#   zone         = var.custom_vm_map["zone"]
+#   boot_disk {
+#     device_name = var.custom_vm_map["boost_disk_initilaize_params_size"]
+#     initialize_params {
+#       image = data.google_compute_image.custom_image.self_link
+#       size  = var.custom_vm_map["boost_disk_initilaize_params_size"]
+#       type  = var.custom_vm_map["boost_disk_initilaize_params_type"]
+#     }
+#   }
+#   allow_stopping_for_update = true # allow the instance to be stopped for update
+#   service_account {
+#     email  = google_service_account.vm_service_account.email
+#     scopes = var.vm_service_account.scopes
+#   }
 
-  name                    = var.custom_vm_map["vm_name"]
-  metadata_startup_script = <<EOT
-  #!/bin/bash
-  if [ -e "/opt/webapp/.env" ]; then
-      echo "File already exists"
-  else
-      echo "DB_HOST=${google_sql_database_instance.cloud_sql_instance.private_ip_address}" >> /opt/webapp/.env
-      echo "DB_USERNAME=${google_sql_user.cloud_sql_user.name}">>/opt/webapp/.env
-      echo "DB_PASSWORD=${local.generated_password}">>/opt/webapp/.env
-      echo "DB_DATABASE=${google_sql_database.cloud_sql_DB.name}">>/opt/webapp/.env
-      echo "PORT=3500">>/opt/webapp/.env
-  fi
-  EOT
-}
+#   name                    = var.custom_vm_map["vm_name"]
+#   metadata_startup_script = <<EOT
+#   #!/bin/bash
+#   if [ -e "/opt/webapp/.env" ]; then
+#       echo "File already exists"
+#   else
+#       echo "DB_HOST=${google_sql_database_instance.cloud_sql_instance.private_ip_address}" >> /opt/webapp/.env
+#       echo "DB_USERNAME=${google_sql_user.cloud_sql_user.name}">>/opt/webapp/.env
+#       echo "DB_PASSWORD=${local.generated_password}">>/opt/webapp/.env
+#       echo "DB_DATABASE=${google_sql_database.cloud_sql_DB.name}">>/opt/webapp/.env
+#       echo "PORT=3500">>/opt/webapp/.env
+#   fi
+#   EOT
+# }
 
 # resource "google_dns_record_set" "a_record_webapp_vm" {
 #   name         = data.google_dns_managed_zone.managed_zone.dns_name
