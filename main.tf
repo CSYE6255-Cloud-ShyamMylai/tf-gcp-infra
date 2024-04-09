@@ -27,6 +27,19 @@ provider "google-beta" {
   project     = var.projectid
   region      = var.projectregion
 }
+data "google_project" "project" {
+  project_id = var.projectid
+}
+
+resource "random_id" "key_ring_id" {
+  byte_length = var.key_ring_details_randomizer.byte_length
+  prefix      = var.key_ring_details_randomizer.prefix
+}
+
+resource "google_kms_key_ring" "key_ring" {
+  name     = random_id.key_ring_id.hex
+  location = var.projectregion
+}
 
 resource "google_compute_network" "vpc_network" {
   name                            = var.vpcs["vpc1"].name
@@ -79,10 +92,10 @@ resource "google_compute_firewall" "vpc_firewall_ssh" {
 
 ## PRIVATE SERVICE ACCESS 
 resource "google_compute_global_address" "private_alloc_vpc" {
-  name          = "allocation-range-vpc-peering"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 24
+  name          = var.vpc_peering_details.name
+  purpose       = var.vpc_peering_details.purpose
+  address_type  = var.vpc_peering_details.address_type
+  prefix_length = var.vpc_peering_details.prefix_length
   network       = google_compute_network.vpc_network.id
   # address       = "193.255.0.0"
 }
@@ -93,16 +106,42 @@ resource "google_service_networking_connection" "private_ip_connection" {
   reserved_peering_ranges = [google_compute_global_address.private_alloc_vpc.name]
   # deletion_policy = "ABANDON"
 }
+resource "google_project_service_identity" "gcpservice_sqladmin" {
+  service  = "sqladmin.googleapis.com"
+  provider = google-beta
+}
+
+resource "random_id" "cloud_sql_key_id" {
+  byte_length = var.cloud_sql_randomizer.byte_length
+  prefix      = var.cloud_sql_randomizer.prefix
+
+}
+resource "google_kms_crypto_key" "sql_key" {
+  provider        = google-beta
+  name            = random_id.cloud_sql_instance_generate_id.hex
+  key_ring        = google_kms_key_ring.key_ring.id
+  purpose         = var.general_crypto_properties.purpose
+  rotation_period = var.general_crypto_properties.rotation_period
+}
+
+resource "google_kms_crypto_key_iam_binding" "crypto_key_sql_binding" {
+  provider      = google-beta
+  crypto_key_id = google_kms_crypto_key.sql_key.id
+  role          = var.general_crypto_properties.service_account_role
+  members = [
+    "${var.service_account_constant}:${google_project_service_identity.gcpservice_sqladmin.email}",
+  ]
+}
 
 resource "google_sql_database_instance" "cloud_sql_instance" {
   provider            = google-beta
   database_version    = var.cloud_sql_instance.database_version
   name                = random_id.cloud_sql_instance_generate_id.hex
-  depends_on          = [google_service_networking_connection.private_ip_connection]
+  depends_on          = [google_service_networking_connection.private_ip_connection, google_kms_crypto_key.sql_key, google_kms_crypto_key_iam_binding.crypto_key_sql_binding]
   deletion_protection = false
   project             = var.projectid
   region              = var.projectregion
-
+  encryption_key_name = google_kms_crypto_key.sql_key.id
   settings {
     tier              = var.cloud_sql_instance.tier
     edition           = var.cloud_sql_instance.edition
@@ -274,7 +313,6 @@ resource "google_project_iam_binding" "binding_service_control_to_serviceaccount
   members = ["${var.service_account_constant}:${google_service_account.vm_service_account.email}"]
 }
 
-
 resource "google_pubsub_topic" "verify_email" {
   name                       = var.pub_sub_topic.name
   message_retention_duration = var.pub_sub_topic.message_retention_duration
@@ -296,11 +334,55 @@ data "google_storage_bucket_object" "storage_bucket_object_of_cloud_function" {
   bucket = data.google_storage_bucket.storage_bucket_of_cloud_function.name
   name   = var.bucket_object_details.object_file_name
 }
+### creating resource for storag bucket 
+## creating random id generator for bucket 
+resource "random_id" "cloud_bucket_prefix" {
+  byte_length = var.cloud_bucket_randomizer.byte_length
+  prefix      = var.cloud_bucket_randomizer.prefix
+}
+
+resource "google_kms_crypto_key" "cloud_storage_bucket" {
+  name            = "${var.bucket_object_details.bucket_name}-key"
+  key_ring        = google_kms_key_ring.key_ring.id
+  purpose         = var.general_crypto_properties.purpose
+  rotation_period = var.general_crypto_properties.rotation_period
+}
+
+data "google_iam_policy" "role_crypto_key_binding_cloud_storage_bucket_sa" {
+  binding {
+    role    = var.general_crypto_properties.service_account_role
+    members = ["${var.service_account_constant}:service-${data.google_project.project.number}@gs-project-accounts.iam.gserviceaccount.com"]
+  }
+}
+
+resource "google_kms_crypto_key_iam_policy" "crypto_key_cloud_storage_bucket_binding" {
+  crypto_key_id = google_kms_crypto_key.cloud_storage_bucket.id
+  policy_data   = data.google_iam_policy.role_crypto_key_binding_cloud_storage_bucket_sa.policy_data
+}
 
 resource "google_service_account" "service_account_for_cloud_function" {
   account_id   = var.service_account_for_cloud_function.account_id
   display_name = var.service_account_for_cloud_function.display_name
   project      = var.projectid
+}
+
+resource "google_storage_bucket" "bucket_for_cloud_function" {
+  name                        = random_id.cloud_bucket_prefix.hex
+  location                    = var.cloud_bucket_details.location
+  project                     = var.projectid
+  force_destroy               = var.cloud_bucket_details.force_destroy
+  storage_class               = var.cloud_bucket_details.storage_class
+  uniform_bucket_level_access = var.cloud_bucket_details.uniform_bucket_level_access
+  public_access_prevention    = var.cloud_bucket_details.public_access_prevention
+  encryption {
+    default_kms_key_name = google_kms_crypto_key.cloud_storage_bucket.id
+  }
+}
+
+resource "google_storage_bucket_object" "object_for_cloud_function" {
+  name   = var.cloud_object_details.name
+  bucket = google_storage_bucket.bucket_for_cloud_function.name
+  source = var.cloud_object_details.source
 }
 
 resource "google_cloudfunctions2_function" "cloud_function_for_verify_email" {
@@ -312,8 +394,10 @@ resource "google_cloudfunctions2_function" "cloud_function_for_verify_email" {
     entry_point = var.cloud_function_for_verify_email.build_config.entry_point
     source {
       storage_source {
-        bucket = data.google_storage_bucket.storage_bucket_of_cloud_function.name
-        object = data.google_storage_bucket_object.storage_bucket_object_of_cloud_function.name
+        # bucket = data.google_storage_bucket.storage_bucket_of_cloud_function.name
+        # object = data.google_storage_bucket_object.storage_bucket_object_of_cloud_function.name
+        bucket = google_storage_bucket.bucket_for_cloud_function.name
+        object = google_storage_bucket_object.object_for_cloud_function.name
       }
     }
   }
@@ -370,11 +454,38 @@ resource "google_vpc_access_connector" "serverless_function_connector" {
   ip_cidr_range = var.google_vpc_access_connector.ip_cidr_range
 }
 
+resource "random_id" "id_for_vm_instance" {
+  byte_length = var.vm_instance_randomizer.byte_length
+  prefix      = var.vm_instance_randomizer.prefix
+
+}
+resource "google_kms_crypto_key" "key_for_instance" {
+  key_ring        = google_kms_key_ring.key_ring.id
+  name            = random_id.id_for_vm_instance.hex
+  purpose         = var.general_crypto_properties.purpose
+  rotation_period = var.general_crypto_properties.rotation_period
+}
+data "google_iam_policy" "kms_key_encrypt_decrypt" {
+  binding {
+    role = var.general_crypto_properties.service_account_role
+
+    members = ["${var.service_account_constant}:service-${data.google_project.project.number}@compute-system.iam.gserviceaccount.com"]
+  }
+}
+
+resource "google_kms_crypto_key_iam_policy" "crypto_key" {
+  crypto_key_id = google_kms_crypto_key.key_for_instance.id
+  policy_data   = data.google_iam_policy.kms_key_encrypt_decrypt.policy_data
+}
+
 resource "google_compute_region_instance_template" "custom_vm_template" {
   name         = var.google_compute_region_instance_template.name
   machine_type = var.google_compute_region_instance_template.machine_type
   disk {
     source_image = data.google_compute_image.custom_image.self_link
+    disk_encryption_key {
+      kms_key_self_link = google_kms_crypto_key.key_for_instance.id
+    }
   }
   metadata_startup_script = <<EOT
   #!/bin/bash
@@ -567,4 +678,16 @@ resource "google_compute_firewall" "vpc_firewall_web" {
   # source_ranges = var.firewall_web["source_ranges"]
   source_ranges      = [module.gce-lb-http.external_ip]
   destination_ranges = [var.vpcs["vpc1"].subnet_1_cidr_range]
+}
+
+output "key_ring_id" {
+  value = google_kms_key_ring.key_ring.id
+}
+
+output "vm_instance_key_id" {
+  value = google_kms_crypto_key.key_for_instance.id
+}
+
+output "vm_service_account_email" {
+  value = google_service_account.vm_service_account.email
 }
