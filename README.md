@@ -11,7 +11,9 @@ Repo relate Infrastructure as code with terraform
 8. Run `terraform validate` to validate the code.
 9. Run `terraform plan` to see the changes that will be made.
 10. Run `terraform apply` to apply the changes.
-11. Run `terraform destroy` to destroy the infrastructure.
+11. Once the infrastructure is created, and crossverfied through post copy keyring and cryptokey from terminal output and update the github secrets 
+12. Go to the template which is create from terraform (prefix: csye6225) get the DB_HOST (GITHUB : DB_HOST_TF) and DB_PASSWROD(GITHUB : DB_PASSWORD_TF) and update the github secrets .
+13. Run `terraform destroy` to destroy the infrastructure.
 
 
 
@@ -34,3 +36,6 @@ Repo relate Infrastructure as code with terraform
 - Eventarc API
 - Cloud Pub/Sub API
 - Cloud Run Admin API
+- Cloud key management service API
+- Cloud Storage API
+- Cloud 

@@ -184,3 +184,45 @@ variable "module_load_balancer" {
   type        = any
 
 }
+
+variable "key_ring_details_randomizer" {
+  description = "key ring details randomizer"
+  type        = any
+}
+
+variable "cloud_sql_randomizer" {
+  description = "cloud sql randomizer"
+  type        = any
+}
+
+variable "general_crypto_properties" {
+  description = "general crypto properties"
+  type        = any
+}
+
+variable "cloud_bucket_randomizer" {
+  description = "cloud bucket randomizer"
+  type        = any
+}
+
+variable "cloud_bucket_details" {
+  description = "cloud bucket details"
+  type        = any
+}
+
+
+variable "cloud_object_details" {
+  description = "storage bucket details"
+  type        = any
+}
+
+variable "vm_instance_randomizer" {
+  description = "vm instance randomizer"
+  type        = any
+}
+
+variable "vpc_peering_details" {
+  description = "vpc peering details"
+  type        = any
+  
+}
