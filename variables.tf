@@ -224,5 +224,5 @@ variable "vm_instance_randomizer" {
 variable "vpc_peering_details" {
   description = "vpc peering details"
   type        = any
-  
+
 }
