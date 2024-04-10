@@ -224,5 +224,28 @@ variable "vm_instance_randomizer" {
 variable "vpc_peering_details" {
   description = "vpc peering details"
   type        = any
+}
 
+variable "storage_service_account_constant" {
+  description = "storage service account constant"
+  type        = any
+  default     = "@gs-project-accounts.iam.gserviceaccount.com"
+}
+
+variable "compute_service_account_constant" {
+  description = "compute service account constant"
+  type        = any
+  default     = "@compute-system.iam.gserviceaccount.com"
+}
+
+variable "sqladmin_api" {
+  description = "sqladmin api"
+  type        = any
+  default     = "sqladmin.googleapis.com"
+}
+
+variable "service_networking_api" {
+  description = "service networking api"
+  type        = any
+  default     = "servicenetworking.googleapis.com"
 }

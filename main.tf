@@ -102,12 +102,12 @@ resource "google_compute_global_address" "private_alloc_vpc" {
 
 resource "google_service_networking_connection" "private_ip_connection" {
   network                 = google_compute_network.vpc_network.id
-  service                 = "servicenetworking.googleapis.com"
+  service                 = var.service_networking_api
   reserved_peering_ranges = [google_compute_global_address.private_alloc_vpc.name]
   # deletion_policy = "ABANDON"
 }
 resource "google_project_service_identity" "gcpservice_sqladmin" {
-  service  = "sqladmin.googleapis.com"
+  service  = var.sqladmin_api
   provider = google-beta
 }
 
@@ -351,7 +351,7 @@ resource "google_kms_crypto_key" "cloud_storage_bucket" {
 data "google_iam_policy" "role_crypto_key_binding_cloud_storage_bucket_sa" {
   binding {
     role    = var.general_crypto_properties.service_account_role
-    members = ["${var.service_account_constant}:service-${data.google_project.project.number}@gs-project-accounts.iam.gserviceaccount.com"]
+    members = ["${var.service_account_constant}:service-${data.google_project.project.number}${var.storage_service_account_constant}"]
   }
 }
 
@@ -469,7 +469,7 @@ data "google_iam_policy" "kms_key_encrypt_decrypt" {
   binding {
     role = var.general_crypto_properties.service_account_role
 
-    members = ["${var.service_account_constant}:service-${data.google_project.project.number}@compute-system.iam.gserviceaccount.com"]
+    members = ["${var.service_account_constant}:service-${data.google_project.project.number}${var.compute_service_account_constant}"]
   }
 }
 
